@@ -1,1 +1,204 @@
-package hospital.management.system;import javax.swing.*;import java.awt.*;import java.awt.event.*;import java.sql.ResultSet;import java.util.Date;public class NEW_PATIENT extends JFrame implements ActionListener {    JTextField tfNumber, tfName, tfDisease, tfDeposit;    JComboBox<String> cbGender;    Choice cRoom;    JLabel lblRoomPrice;    JButton addBtn, backBtn;    public NEW_PATIENT() {        JPanel panel = new JPanel();        panel.setBounds(5, 5, 840, 540);        panel.setBackground(new Color(90, 156, 163));        panel.setLayout(null);        add(panel);        JLabel labelTitle = new JLabel("NEW PATIENT FORM");        labelTitle.setBounds(280, 10, 300, 40);        labelTitle.setFont(new Font("Tahoma", Font.BOLD, 22));        panel.add(labelTitle);        JLabel labelNumber = new JLabel("Patient Number:");        labelNumber.setBounds(50, 80, 150, 30);        labelNumber.setFont(new Font("Tahoma", Font.BOLD, 14));        panel.add(labelNumber);        tfNumber = new JTextField();        tfNumber.setBounds(220, 80, 150, 25);        panel.add(tfNumber);        JLabel labelName = new JLabel("Name:");        labelName.setBounds(50, 120, 150, 30);        labelName.setFont(new Font("Tahoma", Font.BOLD, 14));        panel.add(labelName);        tfName = new JTextField();        tfName.setBounds(220, 120, 150, 25);        panel.add(tfName);        JLabel labelGender = new JLabel("Gender:");        labelGender.setBounds(50, 160, 150, 30);        labelGender.setFont(new Font("Tahoma", Font.BOLD, 14));        panel.add(labelGender);        cbGender = new JComboBox<>(new String[]{"Male", "Female", "Other"});        cbGender.setBounds(220, 160, 150, 25);        panel.add(cbGender);        JLabel labelDisease = new JLabel("Disease:");        labelDisease.setBounds(50, 200, 150, 30);        labelDisease.setFont(new Font("Tahoma", Font.BOLD, 14));        panel.add(labelDisease);        tfDisease = new JTextField();        tfDisease.setBounds(220, 200, 150, 25);        panel.add(tfDisease);        JLabel labelRoom = new JLabel("Select Room:");        labelRoom.setBounds(50, 240, 150, 30);        labelRoom.setFont(new Font("Tahoma", Font.BOLD, 14));        panel.add(labelRoom);        cRoom = new Choice();        cRoom.setBounds(220, 240, 150, 25);        panel.add(cRoom);        JLabel labelRoomPrice = new JLabel("Room Price:");        labelRoomPrice.setBounds(50, 280, 150, 30);        labelRoomPrice.setFont(new Font("Tahoma", Font.BOLD, 14));        panel.add(labelRoomPrice);        lblRoomPrice = new JLabel();        lblRoomPrice.setBounds(220, 280, 150, 30);        panel.add(lblRoomPrice);        JLabel labelDeposit = new JLabel("Deposit:");        labelDeposit.setBounds(50, 320, 150, 30);        labelDeposit.setFont(new Font("Tahoma", Font.BOLD, 14));        panel.add(labelDeposit);        tfDeposit = new JTextField();        tfDeposit.setBounds(220, 320, 150, 25);        panel.add(tfDeposit);        addBtn = new JButton("ADD");        addBtn.setBounds(150, 400, 120, 30);        addBtn.setBackground(Color.BLACK);        addBtn.setForeground(Color.WHITE);        addBtn.addActionListener(this);        panel.add(addBtn);        backBtn = new JButton("BACK");        backBtn.setBounds(300, 400, 120, 30);        backBtn.setBackground(Color.BLACK);        backBtn.setForeground(Color.WHITE);        backBtn.addActionListener(this);        panel.add(backBtn);        // Load available rooms        loadAvailableRooms();        // Update price when room is selected        cRoom.addItemListener(e -> showRoomPrice());        setUndecorated(true);        setSize(850, 500);        setLayout(null);        setLocation(300, 200);        setVisible(true);    }    private void loadAvailableRooms() {        try {            conn c = new conn();            ResultSet rs = c.statement.executeQuery("SELECT room_no FROM room WHERE availability='Available'");            cRoom.removeAll();            while (rs.next()) {                cRoom.add(rs.getString("room_no"));            }            if (cRoom.getItemCount() > 0) {                showRoomPrice();            }        } catch (Exception e) {            e.printStackTrace();        }    }    private void showRoomPrice() {        try {            String roomNo = cRoom.getSelectedItem();            if (roomNo != null) {                conn c = new conn();                ResultSet rs = c.statement.executeQuery("SELECT price FROM room WHERE room_no='" + roomNo + "'");                if (rs.next()) {                    lblRoomPrice.setText(String.valueOf(rs.getDouble("price")));                }            }        } catch (Exception e) {            e.printStackTrace();        }    }    @Override    public void actionPerformed(ActionEvent e) {        if (e.getSource() == addBtn) {            String number = tfNumber.getText();            String name = tfName.getText();            String gender = (String) cbGender.getSelectedItem();            String disease = tfDisease.getText();            String roomNo = cRoom.getSelectedItem();            String deposit = tfDeposit.getText();            Date date = new Date();            String admitDate = new java.sql.Timestamp(date.getTime()).toString();            String roomPrice = lblRoomPrice.getText();            if (number.isEmpty() || name.isEmpty() || disease.isEmpty() || roomNo == null) {                JOptionPane.showMessageDialog(null, "Please fill all fields!");                return;            }            try {                conn c = new conn();                // Insert into patient_info with explicit discharge_date as NULL                String q = "INSERT INTO patient_info (number, name, gender, disease, room_no, admit_date, deposit, price, discharge_date) " +                           "VALUES ('" + number + "','" + name + "','" + gender + "','" + disease + "','" + roomNo + "','" + admitDate + "','" + deposit + "','" + roomPrice + "', NULL)";                // Update room availability                String q1 = "UPDATE room SET availability='Occupied' WHERE room_no='" + roomNo + "'";                c.statement.executeUpdate(q);                c.statement.executeUpdate(q1);                JOptionPane.showMessageDialog(null, "Patient added successfully");                // Refresh available rooms                loadAvailableRooms();                // Clear fields                tfNumber.setText("");                tfName.setText("");                tfDisease.setText("");                tfDeposit.setText("");                lblRoomPrice.setText("");            } catch (Exception ex) {                ex.printStackTrace();                JOptionPane.showMessageDialog(null, "Error while adding patient: " + ex.getMessage());            }        } else if (e.getSource() == backBtn) {            setVisible(false);        }    }    public static void main(String[] args) {        new NEW_PATIENT();    }}
+package hospital.management.system;
+
+import javax.swing.*;
+import java.awt.*;
+import java.awt.event.*;
+import java.sql.ResultSet;
+import java.util.Date;
+
+public class NEW_PATIENT extends JFrame implements ActionListener {
+    JTextField tfNumber, tfName, tfDisease, tfDeposit;
+    JComboBox<String> cbGender;
+    Choice cRoom;
+    JLabel lblRoomPrice;
+    JButton addBtn, backBtn;
+
+    public NEW_PATIENT() {
+        JPanel panel = new JPanel();
+        panel.setBounds(5, 5, 840, 540);
+        panel.setBackground(new Color(90, 156, 163));
+        panel.setLayout(null);
+        add(panel);
+
+        JLabel labelTitle = new JLabel("NEW PATIENT FORM");
+        labelTitle.setBounds(280, 10, 300, 40);
+        labelTitle.setFont(new Font("Tahoma", Font.BOLD, 22));
+        panel.add(labelTitle);
+
+        JLabel labelNumber = new JLabel("Patient Number:");
+        labelNumber.setBounds(50, 80, 150, 30);
+        labelNumber.setFont(new Font("Tahoma", Font.BOLD, 14));
+        panel.add(labelNumber);
+
+        tfNumber = new JTextField();
+        tfNumber.setBounds(220, 80, 150, 25);
+        panel.add(tfNumber);
+
+        JLabel labelName = new JLabel("Name:");
+        labelName.setBounds(50, 120, 150, 30);
+        labelName.setFont(new Font("Tahoma", Font.BOLD, 14));
+        panel.add(labelName);
+
+        tfName = new JTextField();
+        tfName.setBounds(220, 120, 150, 25);
+        panel.add(tfName);
+
+        JLabel labelGender = new JLabel("Gender:");
+        labelGender.setBounds(50, 160, 150, 30);
+        labelGender.setFont(new Font("Tahoma", Font.BOLD, 14));
+        panel.add(labelGender);
+
+        cbGender = new JComboBox<>(new String[]{"Male", "Female", "Other"});
+        cbGender.setBounds(220, 160, 150, 25);
+        panel.add(cbGender);
+
+        JLabel labelDisease = new JLabel("Disease:");
+        labelDisease.setBounds(50, 200, 150, 30);
+        labelDisease.setFont(new Font("Tahoma", Font.BOLD, 14));
+        panel.add(labelDisease);
+
+        tfDisease = new JTextField();
+        tfDisease.setBounds(220, 200, 150, 25);
+        panel.add(tfDisease);
+
+        JLabel labelRoom = new JLabel("Select Room:");
+        labelRoom.setBounds(50, 240, 150, 30);
+        labelRoom.setFont(new Font("Tahoma", Font.BOLD, 14));
+        panel.add(labelRoom);
+
+        cRoom = new Choice();
+        cRoom.setBounds(220, 240, 150, 25);
+        panel.add(cRoom);
+
+        JLabel labelRoomPrice = new JLabel("Room Price:");
+        labelRoomPrice.setBounds(50, 280, 150, 30);
+        labelRoomPrice.setFont(new Font("Tahoma", Font.BOLD, 14));
+        panel.add(labelRoomPrice);
+
+        lblRoomPrice = new JLabel();
+        lblRoomPrice.setBounds(220, 280, 150, 30);
+        panel.add(lblRoomPrice);
+
+        JLabel labelDeposit = new JLabel("Deposit:");
+        labelDeposit.setBounds(50, 320, 150, 30);
+        labelDeposit.setFont(new Font("Tahoma", Font.BOLD, 14));
+        panel.add(labelDeposit);
+
+        tfDeposit = new JTextField();
+        tfDeposit.setBounds(220, 320, 150, 25);
+        panel.add(tfDeposit);
+
+        addBtn = new JButton("ADD");
+        addBtn.setBounds(150, 400, 120, 30);
+        addBtn.setBackground(Color.BLACK);
+        addBtn.setForeground(Color.WHITE);
+        addBtn.addActionListener(this);
+        panel.add(addBtn);
+
+        backBtn = new JButton("BACK");
+        backBtn.setBounds(300, 400, 120, 30);
+        backBtn.setBackground(Color.BLACK);
+        backBtn.setForeground(Color.WHITE);
+        backBtn.addActionListener(this);
+        panel.add(backBtn);
+
+        // Load available rooms
+        loadAvailableRooms();
+
+        // Update price when room is selected
+        cRoom.addItemListener(e -> showRoomPrice());
+
+        setUndecorated(true);
+        setSize(850, 500);
+        setLayout(null);
+        setLocation(300, 200);
+        setVisible(true);
+    }
+
+    private void loadAvailableRooms() {
+        try {
+            conn c = new conn();
+            ResultSet rs = c.statement.executeQuery("SELECT room_no FROM room WHERE availability='Available'");
+            cRoom.removeAll();
+            while (rs.next()) {
+                cRoom.add(rs.getString("room_no"));
+            }
+            if (cRoom.getItemCount() > 0) {
+                showRoomPrice();
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+    private void showRoomPrice() {
+        try {
+            String roomNo = cRoom.getSelectedItem();
+            if (roomNo != null) {
+                conn c = new conn();
+                ResultSet rs = c.statement.executeQuery("SELECT price FROM room WHERE room_no='" + roomNo + "'");
+                if (rs.next()) {
+                    lblRoomPrice.setText(String.valueOf(rs.getDouble("price")));
+                }
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+    @Override
+    public void actionPerformed(ActionEvent e) {
+        if (e.getSource() == addBtn) {
+            String number = tfNumber.getText();
+            String name = tfName.getText();
+            String gender = (String) cbGender.getSelectedItem();
+            String disease = tfDisease.getText();
+            String roomNo = cRoom.getSelectedItem();
+            String deposit = tfDeposit.getText();
+            Date date = new Date();
+            String admitDate = new java.sql.Timestamp(date.getTime()).toString();
+            String roomPrice = lblRoomPrice.getText();
+
+            if (number.isEmpty() || name.isEmpty() || disease.isEmpty() || roomNo == null) {
+                JOptionPane.showMessageDialog(null, "Please fill all fields!");
+                return;
+            }
+
+            try {
+                conn c = new conn();
+
+                // Insert into patient_info with explicit discharge_date as NULL
+                String q = "INSERT INTO patient_info (number, name, gender, disease, room_no, admit_date, deposit, price, discharge_date) " +
+                           "VALUES ('" + number + "','" + name + "','" + gender + "','" + disease + "','" + roomNo + "','" + admitDate + "','" + deposit + "','" + roomPrice + "', NULL)";
+
+                // Update room availability
+                String q1 = "UPDATE room SET availability='Occupied' WHERE room_no='" + roomNo + "'";
+
+                c.statement.executeUpdate(q);
+                c.statement.executeUpdate(q1);
+
+                JOptionPane.showMessageDialog(null, "Patient added successfully");
+
+                // Refresh available rooms
+                loadAvailableRooms();
+
+                // Clear fields
+                tfNumber.setText("");
+                tfName.setText("");
+                tfDisease.setText("");
+                tfDeposit.setText("");
+                lblRoomPrice.setText("");
+
+            } catch (Exception ex) {
+                ex.printStackTrace();
+                JOptionPane.showMessageDialog(null, "Error while adding patient: " + ex.getMessage());
+            }
+        } else if (e.getSource() == backBtn) {
+            setVisible(false);
+        }
+    }
+
+    public static void main(String[] args) {
+        new NEW_PATIENT();
+    }
+}
